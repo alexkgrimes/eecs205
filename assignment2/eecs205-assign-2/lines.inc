@@ -1,12 +1,10 @@
 ; #########################################################################
 ;
-;   stars.inc - Includes for EECS205 Assignment 1
+;   lines.inc - Includes for EECS205 Assignment 2
 ;
 ;
 ; #########################################################################
 
 
-DrawStar proto stdcall x:DWORD, y:DWORD
-
-DrawStarField proto stdcall
-
+DrawPixel proto x:DWORD, y:DWORD, color:DWORD
+DrawLine proto x0:DWORD, y0:DWORD, x1:DWORD, y1:DWORD, color:DWORD

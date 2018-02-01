@@ -1,9 +1,9 @@
 echo off
 
 :::::::::::::::::::::::::::::::::::::::::::::::
-:::											:::
-::: set MASMPATH and MASMLIBPATH below 		:::
-:::											:::
+:::					    :::
+::: set MASMPATH and MASMLIBPATH below 	    :::
+:::					    :::
 :::::::::::::::::::::::::::::::::::::::::::::::
 
 :: make sure you add the path to ml.exe and link.exe
@@ -33,7 +33,11 @@ ml  /c  /coff  /Cp stars.asm
 
 if %errorlevel% neq 0 goto :error
 
-link /SUBSYSTEM:WINDOWS  /LIBPATH:%MASMLIBPATH% stars.obj libstars.obj
+ml  /c  /coff  /Cp lines.asm
+
+if %errorlevel% neq 0 goto :error
+
+link /SUBSYSTEM:WINDOWS  /LIBPATH:%MASMLIBPATH% lines.obj stars.obj liblines.obj
 
 if %errorlevel% neq 0 goto :error
 
