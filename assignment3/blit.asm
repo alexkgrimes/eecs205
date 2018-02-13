@@ -22,8 +22,30 @@ include blit.inc
 	
 .CODE
 
-DrawPixel PROC x:DWORD, y:DWORD, color:DWORD
+DrawPixel PROC USES edi esi eax x:DWORD, y:DWORD, color:DWORD
 
+	LOCAL width_:DWORD, height_:DWORD, index:DWORD
+
+	mov width_, 640				;; initialize values
+	mov height_, 480
+	mov ecx, color				;; ecx = color
+	mov index, 0
+
+	mov edi, width_				;; edi = height
+	mov esi, height_			;; esi = width
+	mov eax, ScreenBitsPtr
+
+	cmp x, edi				;; checks for out of bounds
+	jge return
+
+	cmp y, esi
+	jge return
+
+	imul edi, y
+	add edi, x 				;; width * row + col
+	mov BYTE PTR[eax + edi], cl
+
+return:
 	ret 			; Don't delete this line!!!
 DrawPixel ENDP
 
