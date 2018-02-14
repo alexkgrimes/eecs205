@@ -49,7 +49,62 @@ return:
 	ret 			; Don't delete this line!!!
 DrawPixel ENDP
 
-BasicBlit PROC ptrBitmap:PTR EECS205BITMAP , xcenter:DWORD, ycenter:DWORD
+BasicBlit PROC USES eax ebx ecx edx edi esi ptrBitmap:PTR EECS205BITMAP , xcenter:DWORD, ycenter:DWORD
+	
+	LOCAL x:DWORD, y:DWORD
+
+	mov ebx, ptrBitmap								;; ebx = ptrBitmap
+	mov eax, (EECS205BITMAP PTR [ebx]).lpBytes		;; eax = lpBytes
+
+	mov ecx, xcenter								;; tmp: ecx = centerx
+	mov edi, (EECS205BITMAP PTR [ebx]).dwWidth
+	sar edi, 1					
+	sub ecx, edi				
+	mov x, ecx										;; x = start position in loop
+
+	mov edx, ycenter								;; tmp: edx = centery
+	mov edi, (EECS205BITMAP PTR [ebx]).dwHeight
+	sar edi, 1
+	sub edx, edi				
+	mov y, edx										;; y = start position in loop
+
+	xor esi, esi									;; clear the loop variables
+	xor edi, edi
+	mov ecx, (EECS205BITMAP PTR [ebx]).dwWidth		;; ecx = dwWidth
+
+	;; x and y hold values for point placement
+	;; esi and edi are counters through the EECS205BITMAP
+
+	jmp conditionx
+
+loopx:
+	mov edi, 0										;; reset the inner loops variables
+	mov y, edx
+	jmp conditiony
+
+	loopy:
+		mov ecx, (EECS205BITMAP PTR [ebx]).dwWidth
+		imul ecx, edi
+		add ecx, esi
+		mov cl, BYTE PTR[eax + ecx]					;; ecx = 8-bit color
+		
+		cmp cl, (EECS205BITMAP PTR [ebx]).bTransparent
+		je over
+		invoke DrawPixel, x, y, ecx					;; drawPixel if not transparent
+	over:	
+		inc y 										;; inc inner loop vars
+		inc edi	
+
+	conditiony:
+		cmp edi, (EECS205BITMAP PTR [ebx]).dwHeight	;; if within the height
+		jl loopy
+	
+	inc esi 										;; inc outer loop vars
+	inc x
+conditionx:
+	cmp esi, (EECS205BITMAP PTR [ebx]).dwWidth		;; if within the width
+	jl loopx
+
 
 	ret 			; Don't delete this line!!!	
 BasicBlit ENDP
