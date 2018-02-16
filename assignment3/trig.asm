@@ -26,14 +26,16 @@ PI_INC_RECIP =  5340353        	;;  Use reciprocal to find the table entry for a
 	
 .CODE
 
-FixedSin PROC angle:FXPT
-
+FixedSin PROC USES edx angle:FXPT
+	
 	LOCAL index:DWORD, negIt:DWORD
  
 	mov index, 0					;;initialize these locals
 	mov negIt, 0
 
 	mov eax, angle
+	cmp angle, 0
+	je rawAngle
 	;;mov eax, 0ffff0000h			;; for testing
 
 	jmp conditionSub

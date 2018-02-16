@@ -22,7 +22,23 @@ include blit.inc
 	
 .CODE
 
-DrawPixel PROC USES edi esi eax x:DWORD, y:DWORD, color:DWORD
+
+changeBlit PROC USES eax ebx edx, x:DWORD, y:DWORD, color:DWORD
+  mov edx, 640         
+  mov eax, y 				
+  imul edx					;; eax = row * 640
+
+  mov edx, ScreenBitsPtr
+  mov ebx, color
+  add eax, x              	
+  add eax, edx            	;; eax = ScreenBitsPtr + index
+  mov BYTE PTR [eax], bl    ;; update the color byte in the buffer 
+
+  ret
+changeBlit ENDP
+
+
+DrawPixel PROC USES edi esi eax ecx x:DWORD, y:DWORD, color:DWORD
 
 	LOCAL width_:DWORD, height_:DWORD
 
@@ -39,6 +55,12 @@ DrawPixel PROC USES edi esi eax x:DWORD, y:DWORD, color:DWORD
 
 	cmp y, esi
 	jge return
+
+	cmp x, 0
+	jl return
+
+	cmp y, 0
+	jl return
 
 	imul edi, y
 	add edi, x 					;; width * row + col
@@ -109,9 +131,11 @@ conditionx:
 BasicBlit ENDP
 
 
-RotateBlit PROC USES ebx ecx edx esi edi lpBmp:PTR EECS205BITMAP, xcenter:DWORD, ycenter:DWORD, angle:FXPT
+RotateBlit PROC USES eax ebx ecx edx esi edi lpBmp:PTR EECS205BITMAP, xcenter:DWORD, ycenter:DWORD, angle:FXPT
 
-	LOCAL tColor:BYTE, shiftX:DWORD, shiftY:DWORD, dstWidth:DWORD, dstHeight:DWORD, dstX:DWORD, dstY:DWORD, srcX:DWORD, srcY:DWORD, x:DWORD, y:DWORD
+	LOCAL tColor:BYTE, shiftX:DWORD, shiftY:DWORD, dstWidth:DWORD 
+	LOCAL dstHeight:DWORD, dstX:DWORD, dstY:DWORD, srcX:DWORD, srcY:DWORD
+	LOCAL x:DWORD, y:DWORD
 
 	invoke FixedCos, angle
 	mov ecx, eax									;; ecx = cos(angle)
@@ -124,27 +148,28 @@ RotateBlit PROC USES ebx ecx edx esi edi lpBmp:PTR EECS205BITMAP, xcenter:DWORD,
 
 	;; setting shiftX
 	mov eax, (EECS205BITMAP PTR [esi]).dwWidth
-	sal eax, 16				;; convert to fixed point
+	sal eax, 16
 	imul ecx
-	mov shiftX, edx
-	sar shiftX, 1									;; eax <- dwWidth*cosa / 2
+	mov shiftX, edx			
+	sar shiftX, 1									;; shiftX <- dwWidth*cosa / 2
 	mov eax, (EECS205BITMAP PTR [esi]).dwHeight
-	sal eax, 16 			;; convert to fixed point
+	sal eax, 16
 	imul edi
 	sar edx, 1
 	sub shiftX, edx 								;; shiftX is DONE
 
-	;; SHIFT VARS ARE FIXED POINT
 
 	;; setting shiftY
 	mov eax, (EECS205BITMAP PTR [esi]).dwHeight
+	sal eax, 16
 	imul ecx
-	mov shiftY, eax
+	mov shiftY, edx
 	sar shiftY, 1
 	mov eax, (EECS205BITMAP PTR [esi]).dwWidth
+	sal eax, 16
 	imul edi
-	sar eax, 1
-	add shiftY, eax									;; shiftY is DONE
+	sar edx, 1
+	add shiftY, edx									;; shiftY is DONE
 
 	;; setting dstWidth and dstHeight
 	mov eax, (EECS205BITMAP PTR [esi]).dwWidth
@@ -157,31 +182,33 @@ RotateBlit PROC USES ebx ecx edx esi edi lpBmp:PTR EECS205BITMAP, xcenter:DWORD,
 	mov dstX, eax					;; dstX = -dstWidth
 	mov dstY, eax					;; dstY = -dstHeight
 
-	sar shiftY, 16					;; convert to integer
-	sar shiftX, 16
-
 	jmp condition_x
 
+loop_x:
+	mov eax, dstHeight				;; reset loop_y vars
+	neg eax
+	mov dstY, eax 
 
 	loop_y:
 		;; setting srcX
 		mov eax, dstX
+		sal eax, 16
 		imul ecx
-		mov srcX, eax
+		mov srcX, edx
 		mov eax, dstY
+		sal eax, 16
 		imul edi
-		add srcX, eax 				;; srcX = dstX * cosa + dstY * sina
+		add srcX, edx 				;; srcX = dstX * cosa + dstY * sina
 
 		;; setting srcY
 		mov eax, dstY
+		sal eax, 16
 		imul ecx
-		mov srcY, eax
+		mov srcY, edx
 		mov eax, dstX
+		sal eax, 16
 		imul edi
-		sub srcY, eax 				;; srcY = dstY * cosa - dstX * sina
-
-		sar srcX, 16
-		sar srcY, 16				;; convert to integer
+		sub srcY, edx 				;; srcY = dstY * cosa - dstX * sina
 
 		;; THE IF STATEMENTS 											
 
@@ -203,11 +230,9 @@ RotateBlit PROC USES ebx ecx edx esi edi lpBmp:PTR EECS205BITMAP, xcenter:DWORD,
 		add eax, dstX
 		sub eax, shiftX
 		cmp eax, 0
+		mov x, eax
 		jl break 					;; (xcenter + dstX - shiftX >= 0)
 
-		mov eax, xcenter
-		add eax, dstX
-		sub eax, shiftX
 		cmp eax, 639
 		jge break 					;; (xcenter + dstX - shiftX < 639)
 
@@ -215,33 +240,24 @@ RotateBlit PROC USES ebx ecx edx esi edi lpBmp:PTR EECS205BITMAP, xcenter:DWORD,
 		add eax, dstY
 		sub eax, shiftY
 		cmp eax, 0
+		mov y, eax
 		jl break 					;; (ycenter + dstY - shiftY) >= 0 
 
-		mov eax, ycenter
-		add eax, dstY
-		sub eax, shiftY
 		cmp eax, 479
 		jge break 					;; (ycenter + dstY - shiftY) < 479
 
-		mov eax, (EECS205BITMAP PTR [esi]).dwWidth	;; get the color
-		mov edx, srcY
-		imul edx
-		add eax, srcX
-		add eax, (EECS205BITMAP PTR [esi]).lpBytes	;; eax <- color
-		mov dl, BYTE PTR [eax]
-		cmp dl, tColor
-		je break 					;; pixel(srcX, srcY) transparent
+		;; find color and compare to trasnparent
+		mov eax, srcY
+	    imul (EECS205BITMAP PTR[esi]).dwWidth
+	    add eax, srcX
+	    add eax, (EECS205BITMAP PTR[esi]).lpBytes
+	    mov al, BYTE PTR [eax]
+	    cmp al, (EECS205BITMAP PTR[esi]).bTransparent
+      	je break
 
-		mov ebx, xcenter
-		add ebx, dstX
-		sub ebx, shiftX
-		mov x, ebx
-		mov ebx, ycenter
-		add ebx, dstY
-		sub ebx, shiftY
-		mov y, ebx
-		invoke DrawPixel, x, y, BYTE PTR [eax]
+      	movzx eax, al
 
+		invoke changeBlit, x, y, eax
 
 	break:
 		inc dstY					;; something was false, inc and continue
@@ -250,19 +266,17 @@ RotateBlit PROC USES ebx ecx edx esi edi lpBmp:PTR EECS205BITMAP, xcenter:DWORD,
 		mov eax, dstY				;; dstY < dstHeight
 		cmp eax, dstHeight
 		jl loop_y
-		inc dstX					;; break out of loop_y, inc loop_x var
+		
+	inc dstX						;; break out of loop_y, inc loop_x var
 
 condition_x: 
-	mov eax, dstHeight				;; first, reset loop_y vars
-	neg eax
-	mov dstY, eax 
-
-
 	mov eax, dstX					;; dstX < dstWidth
 	cmp eax, dstWidth
-	jl condition_y
+	jl loop_x
 
 	ret 			; Don't delete this line!!!		
+
 RotateBlit ENDP
 
 END
+
