@@ -24,25 +24,24 @@ include blit.inc
 
 DrawPixel PROC USES edi esi eax x:DWORD, y:DWORD, color:DWORD
 
-	LOCAL width_:DWORD, height_:DWORD, index:DWORD
+	LOCAL width_:DWORD, height_:DWORD
 
 	mov width_, 640				;; initialize values
 	mov height_, 480
 	mov ecx, color				;; ecx = color
-	mov index, 0
 
 	mov edi, width_				;; edi = height
 	mov esi, height_			;; esi = width
 	mov eax, ScreenBitsPtr
 
-	cmp x, edi				;; checks for out of bounds
+	cmp x, edi					;; checks for out of bounds
 	jge return
 
 	cmp y, esi
 	jge return
 
 	imul edi, y
-	add edi, x 				;; width * row + col
+	add edi, x 					;; width * row + col
 	mov BYTE PTR[eax + edi], cl
 
 return:
@@ -110,11 +109,160 @@ conditionx:
 BasicBlit ENDP
 
 
-RotateBlit PROC lpBmp:PTR EECS205BITMAP, xcenter:DWORD, ycenter:DWORD, angle:FXPT
+RotateBlit PROC USES ebx ecx edx esi edi lpBmp:PTR EECS205BITMAP, xcenter:DWORD, ycenter:DWORD, angle:FXPT
+
+	LOCAL tColor:BYTE, shiftX:DWORD, shiftY:DWORD, dstWidth:DWORD, dstHeight:DWORD, dstX:DWORD, dstY:DWORD, srcX:DWORD, srcY:DWORD, x:DWORD, y:DWORD
+
+	invoke FixedCos, angle
+	mov ecx, eax									;; ecx = cos(angle)
+	invoke FixedSin, angle
+	mov edi, eax 									;; edi = sin(angle)
+
+	mov esi, lpBmp									;; esi = bitmap
+	mov bl, (EECS205BITMAP PTR [esi]).bTransparent	
+	mov tColor, bl 									;; tColor = bTranspartent
+
+	;; setting shiftX
+	mov eax, (EECS205BITMAP PTR [esi]).dwWidth
+	sal eax, 16				;; convert to fixed point
+	imul ecx
+	mov shiftX, edx
+	sar shiftX, 1									;; eax <- dwWidth*cosa / 2
+	mov eax, (EECS205BITMAP PTR [esi]).dwHeight
+	sal eax, 16 			;; convert to fixed point
+	imul edi
+	sar edx, 1
+	sub shiftX, edx 								;; shiftX is DONE
+
+	;; SHIFT VARS ARE FIXED POINT
+
+	;; setting shiftY
+	mov eax, (EECS205BITMAP PTR [esi]).dwHeight
+	imul ecx
+	mov shiftY, eax
+	sar shiftY, 1
+	mov eax, (EECS205BITMAP PTR [esi]).dwWidth
+	imul edi
+	sar eax, 1
+	add shiftY, eax									;; shiftY is DONE
+
+	;; setting dstWidth and dstHeight
+	mov eax, (EECS205BITMAP PTR [esi]).dwWidth
+	add eax, (EECS205BITMAP PTR [esi]).dwHeight
+	mov dstWidth, eax
+	mov dstHeight, eax 
+
+	;; initialize the loop variables
+	neg eax
+	mov dstX, eax					;; dstX = -dstWidth
+	mov dstY, eax					;; dstY = -dstHeight
+
+	sar shiftY, 16					;; convert to integer
+	sar shiftX, 16
+
+	jmp condition_x
+
+
+	loop_y:
+		;; setting srcX
+		mov eax, dstX
+		imul ecx
+		mov srcX, eax
+		mov eax, dstY
+		imul edi
+		add srcX, eax 				;; srcX = dstX * cosa + dstY * sina
+
+		;; setting srcY
+		mov eax, dstY
+		imul ecx
+		mov srcY, eax
+		mov eax, dstX
+		imul edi
+		sub srcY, eax 				;; srcY = dstY * cosa - dstX * sina
+
+		sar srcX, 16
+		sar srcY, 16				;; convert to integer
+
+		;; THE IF STATEMENTS 											
+
+		cmp srcX, 0
+		jl break					;; srcX >= 0
+
+		mov eax, (EECS205BITMAP PTR [esi]).dwWidth
+		cmp srcX, eax
+		jge break					;; srcX < (EECS205BITMAP PTR [esi]).dwWidth
+
+		cmp srcY, 0
+		jl break					;; srcY >= 0
+
+		mov eax, (EECS205BITMAP PTR [esi]).dwHeight
+		cmp srcY, eax
+		jge break 					;; srcY < dwHeight
+
+		mov eax, xcenter
+		add eax, dstX
+		sub eax, shiftX
+		cmp eax, 0
+		jl break 					;; (xcenter + dstX - shiftX >= 0)
+
+		mov eax, xcenter
+		add eax, dstX
+		sub eax, shiftX
+		cmp eax, 639
+		jge break 					;; (xcenter + dstX - shiftX < 639)
+
+		mov eax, ycenter
+		add eax, dstY
+		sub eax, shiftY
+		cmp eax, 0
+		jl break 					;; (ycenter + dstY - shiftY) >= 0 
+
+		mov eax, ycenter
+		add eax, dstY
+		sub eax, shiftY
+		cmp eax, 479
+		jge break 					;; (ycenter + dstY - shiftY) < 479
+
+		mov eax, (EECS205BITMAP PTR [esi]).dwWidth	;; get the color
+		mov edx, srcY
+		imul edx
+		add eax, srcX
+		add eax, (EECS205BITMAP PTR [esi]).lpBytes	;; eax <- color
+		mov dl, BYTE PTR [eax]
+		cmp dl, tColor
+		je break 					;; pixel(srcX, srcY) transparent
+
+		mov ebx, xcenter
+		add ebx, dstX
+		sub ebx, shiftX
+		mov x, ebx
+		mov ebx, ycenter
+		add ebx, dstY
+		sub ebx, shiftY
+		mov y, ebx
+		invoke DrawPixel, x, y, BYTE PTR [eax]
+
+
+	break:
+		inc dstY					;; something was false, inc and continue
+
+	condition_y: 				
+		mov eax, dstY				;; dstY < dstHeight
+		cmp eax, dstHeight
+		jl loop_y
+		inc dstX					;; break out of loop_y, inc loop_x var
+
+condition_x: 
+	mov eax, dstHeight				;; first, reset loop_y vars
+	neg eax
+	mov dstY, eax 
+
+
+	mov eax, dstX					;; dstX < dstWidth
+	cmp eax, dstWidth
+	jl condition_y
 
 	ret 			; Don't delete this line!!!		
 RotateBlit ENDP
-
-
 
 END

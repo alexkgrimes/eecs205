@@ -20,7 +20,7 @@ include stars.inc
 .CODE
 
 DrawStarField proc
-COMMENT @
+
 	;; Place your code here
 	invoke DrawStar, 445, 193 
 	invoke DrawStar, 269, 205
@@ -57,7 +57,7 @@ COMMENT @
 	invoke DrawStar, 406, 18
 	invoke DrawStar, 600, 309
 	invoke DrawStar, 336, 206
-@
+
 	ret  			; Careful! Don't remove this line
 DrawStarField endp
 
