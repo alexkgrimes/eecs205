@@ -30,21 +30,21 @@ Asteroid STRUCT
 	curr_y DWORD ?
 	dest_x DWORD ?
 	dest_y DWORD ?
+	bitmap DWORD ? ;; pointer to the bitmap
 Asteroid ENDS
 
 welcomeStr BYTE "WELCOME TO ASTEROIDS!", 0
 startStr BYTE "PRESS SPACEBAR TO PLAY", 0
-pausedStr BYTE "GAME PAUSED, PRESS SPACEBAR TO CONTINUE", 0
-playStr BYTE "YOU'RE PLAYING, P to pause", 0
+pausedStr BYTE "PAUSED: PRESS SPACEBAR TO CONTINUE", 0
 
-status DWORD 0				;; 0:start, 1:play, 2:paused
+status DWORD 0				;; 0:start, 1:play, 2:paused, 3:gameover
 angle DWORD 0				;; current angle of fighter
 xcenter DWORD 320
 ycenter DWORD 240			;; x and y where the fighter sits
 
 ;; asteroids 
-asteroid_1 Asteroid <400, 400, 0, 0> 		;; asteroid at 400, 400 with dest 0,0
-asteroid_mouse Asteroid <450, 450, 0, 0>  	;; for testing and mouse req
+asteroid_1 Asteroid <400, 400, 0, 0, OFFSET asteroid_001> 		;; asteroid at 400, 400 with dest 0,0
+asteroid_mouse Asteroid <450, 450, 0, 0, ?>  	;; for testing and mouse req
 
 .CODE
 	
@@ -66,7 +66,8 @@ GameInit ENDP
 GamePlay PROC USES eax ebx
 	;; clear the screen to make things easier ;;
 	invoke ClearScreen
-	;; update status ;;
+
+	;; update status (start, play, paused, game over);;
 	invoke KeyHandler 	
 
 	;; decide what to do based on your game status ;;		
@@ -76,6 +77,8 @@ GamePlay PROC USES eax ebx
 	je  PLAY
 	cmp status, 2
 	je PAUSE
+	cmp status, 3
+	je GAMEOVER
 
 START:
 	;; simply continue to draw the start screen ;;
@@ -92,25 +95,27 @@ PLAY:
 	;; JUST FOR NOW: move the asteroid around with mouse;;
 	invoke MouseHandler
 
-	;; TEST INTERSECT
 	mov ebx, OFFSET asteroid_mouse
 	invoke CheckIntersect, xcenter, ycenter, OFFSET fighter_001, (Asteroid PTR [ebx]).curr_x, (Asteroid PTR [ebx]).curr_y, OFFSET asteroid_001
 
 	cmp eax, 1
 	jne noCollision
 
-	invoke BasicBlit, OFFSET nuke_004, xcenter, ycenter
-	invoke DrawStarField
-	invoke RotateBlit, OFFSET fighter_001, 320, 240, angle
-	jmp DONE
+	mov (Asteroid PTR [ebx]).bitmap, OFFSET nuke_002
+	jmp continue
 
 noCollision:
-	;; redraw the rotated fighter and background ;;
-	invoke RotateBlit, OFFSET fighter_001, 320, 240, angle
+	mov (Asteroid PTR [ebx]).bitmap, OFFSET asteroid_001
+	
+continue:
 
 	;; JUST FOR NOW: draw a random asteroid for now ;;
 	mov eax, OFFSET asteroid_1
-	invoke BasicBlit, OFFSET asteroid_001, (Asteroid PTR [eax]).curr_x, (Asteroid PTR [eax]).curr_y
+
+	;; Stuff you always do ;;
+	invoke BasicBlit, (Asteroid PTR [ebx]).bitmap, (Asteroid PTR [ebx]).curr_x, (Asteroid PTR [ebx]).curr_y
+	invoke BasicBlit, (Asteroid PTR [eax]).bitmap, (Asteroid PTR [eax]).curr_x, (Asteroid PTR [eax]).curr_y
+	invoke RotateBlit, OFFSET fighter_001, 320, 240, angle
 	invoke DrawStarField
 
 	jmp DONE
@@ -119,8 +124,10 @@ PAUSE:
 	;; show pause screen and message ;;
 	invoke DrawStarField
 	invoke BasicBlit, OFFSET fighter_001, 320, 240
-	invoke DrawStr, OFFSET pausedStr, 230, 300, 0ffh
+	invoke DrawStr, OFFSET pausedStr, 200, 300, 0ffh
 	jmp DONE
+
+GAMEOVER:
 
 DONE:
 	ret         ;; Do not delete this line!!!
@@ -242,7 +249,7 @@ CheckIntersect ENDP
 ClearScreen PROC USES eax edi ecx
   mov eax, 0
   mov edi, ScreenBitsPtr
-  mov ecx, 307200
+  mov ecx, 4b000h
   REP STOSB
 
   ret
@@ -285,16 +292,11 @@ MouseHandler PROC USES eax esi ebx ecx edx
 	mov esi, OFFSET MouseStatus
     mov ebx, (MouseInfo PTR [esi]).horiz
     mov ecx, (MouseInfo PTR [esi]).vert
-    ;;mov edx, (MouseInfo PTR [esi]).buttons
 
-    ;;cmp buttons, MK_LBUTTON
-    ;;jne done
     mov eax, OFFSET asteroid_mouse
     mov (Asteroid PTR [eax]).curr_x, ebx
     mov (Asteroid PTR [eax]).curr_y, ecx
-	invoke BasicBlit, OFFSET asteroid_001, ebx, ecx
 
-done:
 	ret
 MouseHandler ENDP
 
