@@ -31,9 +31,8 @@ startStr BYTE "PRESS SPACEBAR TO PLAY", 0
 pausedStr BYTE "PAUSED: PRESS SPACEBAR TO CONTINUE", 0
 
 status DWORD 0				;; 0:start, 1:play, 2:paused, 3:gameover
-angle DWORD 0				;; current angle of fighter
-xcenter DWORD 320
-ycenter DWORD 240			;; x and y where the fighter sits
+p1numSprites DWORD 0		
+p2numSprites DWORD 0
 
 PI_HALF = 102943           	;;  PI / 2
 PI =  205887	            ;;  PI 
@@ -57,7 +56,7 @@ Player ENDS
 ;; object declarations ;;
 p1 Player <?, 590, 240, -PI_HALF, OFFSET fighter_001>
 p2 Player <?, 50, 240, PI_HALF, OFFSET fighter_001>
-p1Sprites Sprite 1 DUP (<400, 400, OFFSET nuke_000>)
+p1Sprites Sprite 500 DUP (<>)
 
 .CODE
 	
@@ -76,7 +75,13 @@ GameInit PROC
 	ret         ;; Do not delete this line!!!
 GameInit ENDP
 
-GamePlay PROC USES eax ebx
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;							 						 ;;
+;; 	  			GamePlay        					 ;;
+;;							 						 ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+GamePlay PROC USES eax ebx ecx
 	;; clear the screen to make things easier ;;
 	invoke ClearScreen
 
@@ -109,20 +114,7 @@ PLAY:
 	;; find out what key was last pressed to update lastPressed for the players ;;
 	invoke KeyHandler
 
-	;; JUST FOR NOW: move the asteroid around with mouse;;
-	;; invoke MouseHandler
-
-	;;mov ebx, OFFSET asteroid_mouse
-	;;invoke CheckIntersect, xcenter, ycenter, OFFSET fighter_001, (Asteroid PTR [ebx]).curr_x, (Asteroid PTR [ebx]).curr_y, OFFSET asteroid_001
-
-	;;cmp eax, 1
-	;;jne noCollision
-
-	;;mov (Asteroid PTR [ebx]).bitmap, OFFSET nuke_002
-	;;jmp continue
-
-;;noCollision:
-	;;mov (Asteroid PTR [ebx]).bitmap, OFFSET asteroid_001
+	;; TODO: collisions
 	
 continue:
 	;; draw background and fighters ;;
@@ -132,16 +124,27 @@ continue:
 	invoke RotateBlit, p1.bitmap, p1.x, p1.y, p1.angle
 	invoke RotateBlit, p2.bitmap, p2.x, p2.y, p2.angle
 
-
+	;; draw player 1 sprites in flight ;;
+	mov ecx, 0
+	mov ebx, 0
 	mov eax, OFFSET p1Sprites
-	invoke BasicBlit, (Sprite PTR [eax]).bitmap, (Sprite PTR [eax]).x, (Sprite PTR [eax]).y 
+		jmp cond 
+	draw:
+		invoke BasicBlit, (Sprite PTR [eax + ebx]).bitmap, (Sprite PTR [eax + ebx]).x, (Sprite PTR [eax + ebx]).y 
+		inc ecx
+		add ebx, TYPE Sprite
+	cond:
+		cmp ecx, p1numSprites
+		jl  draw
 	jmp DONE
+
+	;; TODO: draw player 2 sprites in flight
 	
 PAUSE:
 	;; show pause screen and message ;;
 	invoke DrawStarField
-	invoke RotateBlit, OFFSET fighter_001, 50, 240, PI_HALF
-	invoke RotateBlit, OFFSET fighter_001, 590, 240, - PI_HALF
+	invoke RotateBlit, p1.bitmap, p1.x, p1.y, p1.angle
+	invoke RotateBlit, p2.bitmap, p2.x, p2.y, p2.angle
 	invoke DrawStr, OFFSET pausedStr, 200, 300, 0ffh
 	jmp DONE
 
@@ -157,7 +160,7 @@ GamePlay ENDP
 ;;							 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-UpdatePositions PROC
+UpdatePositions PROC USES eax ebx ecx edx
 	;; player1 ;;
 	cmp p1.lastPressed, VK_UP
 	je p1MoveUp
@@ -172,6 +175,7 @@ p1MoveDown:
 	add p1.y, 5
 	jmp player2
 
+	;; player 2 ;;
 player2:
 	cmp p2.lastPressed, VK_S
 	je p2MoveDown
@@ -186,6 +190,22 @@ p2MoveDown:
 	jmp done
 
 done:
+
+	;; move all sprites in flight ;;
+
+	;; player1's sprites
+	mov ecx, 0
+	mov ebx, 0
+	mov eax, OFFSET p1Sprites
+		jmp cond 
+	move:
+		sub (Sprite PTR [eax + ebx]).x, 5
+		inc ecx
+		add ebx, TYPE Sprite
+	cond:
+		cmp ecx, p1numSprites
+		jl  move
+	
 	ret
 UpdatePositions ENDP
 
@@ -211,13 +231,16 @@ ClearScreen ENDP
 ;;							 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-KeyHandler PROC USES eax
-    mov eax, KeyDown
+KeyHandler PROC USES eax ebx ecx edx
+    mov eax, KeyPress
+
+    ;; status keys ;;
     cmp eax, VK_SPACE 				;; a spacebar
     je spaceBar
     cmp eax, VK_P				;; the P key
     je pKey
  
+ 	;; movement keys ;;
     cmp eax, VK_UP				;; an up arrow
     je upArrow
     cmp eax, VK_DOWN
@@ -226,6 +249,13 @@ KeyHandler PROC USES eax
     je wKey
     cmp eax, VK_S
     je sKey
+
+    ;; shooting keys ;;
+    cmp eax, VK_X
+    je xKey
+    cmp eax, VK_RETURN
+    je return
+
     jmp done
 
 spaceBar:
@@ -238,15 +268,31 @@ pKey:
 upArrow:					;; update p1 lastPressed
 	mov p1.lastPressed, VK_UP
 	jmp done
-downArrow:					;; update p2 lastPressed		
+downArrow:							
 	mov p1.lastPressed, VK_DOWN
 	jmp done
-wKey:
+wKey:						;; update p2 lastPressed
 	mov p2.lastPressed, VK_W
 	jmp done
 sKey:
 	mov p2.lastPressed, VK_S
 	jmp done
+
+return:
+	mov eax, OFFSET p1Sprites
+	mov ecx, p1numSprites
+	imul ecx, TYPE Sprite
+	mov ebx, p1.x
+	mov edx, p1.y
+	mov (Sprite PTR [eax + ecx]).x, ebx
+	mov (Sprite PTR [eax + ecx]).y, edx
+	mov (Sprite PTR [eax + ecx]).bitmap, OFFSET nuke_000
+	inc p1numSprites
+	
+	jmp done
+
+xKey:
+
 
 done:
       ret
