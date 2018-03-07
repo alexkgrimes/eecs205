@@ -57,6 +57,7 @@ Player ENDS
 p1 Player <?, 590, 240, -PI_HALF, OFFSET fighter_001>
 p2 Player <?, 50, 240, PI_HALF, OFFSET fighter_001>
 p1Sprites Sprite 500 DUP (<>)
+p2Sprites Sprite 500 DUP(<>)
 
 .CODE
 	
@@ -128,17 +129,29 @@ continue:
 	mov ecx, 0
 	mov ebx, 0
 	mov eax, OFFSET p1Sprites
-		jmp cond 
-	draw:
+		jmp cond1
+	draw1:
 		invoke BasicBlit, (Sprite PTR [eax + ebx]).bitmap, (Sprite PTR [eax + ebx]).x, (Sprite PTR [eax + ebx]).y 
 		inc ecx
 		add ebx, TYPE Sprite
-	cond:
+	cond1:
 		cmp ecx, p1numSprites
-		jl  draw
+		jl  draw1
+
+	;; draw player 2 sprites in flight ;;
+	mov ecx, 0
+	mov ebx, 0
+	mov eax, OFFSET p2Sprites
+		jmp cond2
+	draw2:
+		invoke BasicBlit, (Sprite PTR [eax + ebx]).bitmap, (Sprite PTR [eax + ebx]).x, (Sprite PTR [eax + ebx]).y 
+		inc ecx
+		add ebx, TYPE Sprite
+	cond2:
+		cmp ecx, p2numSprites
+		jl  draw2
 	jmp DONE
 
-	;; TODO: draw player 2 sprites in flight
 	
 PAUSE:
 	;; show pause screen and message ;;
@@ -197,14 +210,27 @@ done:
 	mov ecx, 0
 	mov ebx, 0
 	mov eax, OFFSET p1Sprites
-		jmp cond 
-	move:
-		sub (Sprite PTR [eax + ebx]).x, 5
+		jmp cond1 
+	move1:
+		sub (Sprite PTR [eax + ebx]).x, 8
 		inc ecx
 		add ebx, TYPE Sprite
-	cond:
+	cond1:
 		cmp ecx, p1numSprites
-		jl  move
+		jl  move1
+
+	;; player2's sprites
+	mov ecx, 0
+	mov ebx, 0
+	mov eax, OFFSET p2Sprites
+		jmp cond2
+	move2:
+		add (Sprite PTR [eax + ebx]).x, 8
+		inc ecx
+		add ebx, TYPE Sprite
+	cond2:
+		cmp ecx, p2numSprites
+		jl  move2
 	
 	ret
 UpdatePositions ENDP
@@ -241,7 +267,7 @@ KeyHandler PROC USES eax ebx ecx edx
     je pKey
  
  	;; movement keys ;;
-    cmp eax, VK_UP				;; an up arrow
+    cmp eax, VK_UP				
     je upArrow
     cmp eax, VK_DOWN
     je downArrow
@@ -292,7 +318,17 @@ return:
 	jmp done
 
 xKey:
-
+	mov eax, OFFSET p2Sprites
+	mov ecx, p2numSprites
+	imul ecx, TYPE Sprite
+	mov ebx, p2.x
+	mov edx, p2.y
+	mov (Sprite PTR [eax + ecx]).x, ebx
+	mov (Sprite PTR [eax + ecx]).y, edx
+	mov (Sprite PTR [eax + ecx]).bitmap, OFFSET nuke_000
+	inc p2numSprites
+	
+	jmp done
 
 done:
       ret
