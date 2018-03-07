@@ -29,6 +29,7 @@ includelib \masm32\lib\user32.lib
 welcomeStr BYTE "WELCOME TO ASTEROIDS!", 0
 startStr BYTE "PRESS SPACEBAR TO PLAY", 0
 pausedStr BYTE "PAUSED: PRESS SPACEBAR TO CONTINUE", 0
+gameOverStr Byte "GAME OVER", 0
 
 status DWORD 0				;; 0:start, 1:play, 2:paused, 3:gameover
 p1numSprites DWORD 0		
@@ -57,7 +58,7 @@ Player ENDS
 p1 Player <?, 590, 240, -PI_HALF, OFFSET fighter_001>
 p2 Player <?, 50, 240, PI_HALF, OFFSET fighter_001>
 p1Sprites Sprite 500 DUP (<>)
-p2Sprites Sprite 500 DUP(<>)
+p2Sprites Sprite 500 DUP (<>)
 
 .CODE
 	
@@ -89,6 +90,7 @@ GamePlay PROC USES eax ebx ecx
 	;; update status (start, play, paused, game over) ;;
 	;; update players keyPressed values ;;
 	invoke KeyHandler 	
+	
 
 	;; decide what to do based on your game status ;;		
 	cmp status, 0
@@ -113,14 +115,43 @@ START:
 
 PLAY:
 	;; find out what key was last pressed to update lastPressed for the players ;;
-	invoke KeyHandler
+	;;invoke KeyHandler
 
-	;; TODO: collisions
-	
-continue:
 	;; draw background and fighters ;;
 	invoke UpdatePositions
 
+	
+
+	;; check for collisions ;;
+	mov edx, OFFSET p1Sprites
+	mov ebx, 0
+	mov ecx, 0
+		jmp condIntersect
+	do:
+		invoke CheckIntersect, (Sprite PTR [edx + ebx]).x, (Sprite PTR [edx + ebx]).y, (Sprite PTR [edx + ebx]).bitmap, p2.x, p2.y, p2.bitmap
+		cmp eax, 1
+		je GAMEOVER
+		inc ecx
+		add ebx, TYPE Sprite
+	condIntersect:
+		cmp ecx, p1numSprites
+		jl  do
+
+	mov edx, OFFSET p2Sprites
+	mov ebx, 0
+	mov ecx, 0
+		jmp condIntersect1
+	do1:
+		invoke CheckIntersect, (Sprite PTR [edx + ebx]).x, (Sprite PTR [edx + ebx]).y, (Sprite PTR [edx + ebx]).bitmap, p1.x, p1.y, p1.bitmap
+		cmp eax, 1
+		je GAMEOVER
+		inc ecx
+		add ebx, TYPE Sprite
+	condIntersect1:
+		cmp ecx, p2numSprites
+		jl  do1
+
+	;; do everything else ;;
 	invoke DrawStarField
 	invoke RotateBlit, p1.bitmap, p1.x, p1.y, p1.angle
 	invoke RotateBlit, p2.bitmap, p2.x, p2.y, p2.angle
@@ -150,8 +181,9 @@ continue:
 	cond2:
 		cmp ecx, p2numSprites
 		jl  draw2
-	jmp DONE
 
+
+	jmp DONE
 	
 PAUSE:
 	;; show pause screen and message ;;
@@ -162,6 +194,13 @@ PAUSE:
 	jmp DONE
 
 GAMEOVER:
+	;; show gameover screen and message ;;
+	mov status, 3
+	invoke DrawStarField
+	invoke RotateBlit, p1.bitmap, p1.x, p1.y, p1.angle
+	invoke RotateBlit, p2.bitmap, p2.x, p2.y, p2.angle
+	invoke DrawStr, OFFSET gameOverStr, 200, 300, 0ffh
+	jmp DONE
 
 DONE:
 	ret         ;; Do not delete this line!!!
