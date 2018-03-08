@@ -27,7 +27,11 @@ includelib \masm32\lib\user32.lib
 
 ;; constant declarations ;; 
 welcomeStr BYTE "WELCOME TO ASTEROIDS!", 0
+directions1 BYTE "PLAYER 1 ON THE LEFT USE W AND S TO MOVE UP AND DOWN, X TO SHOOT", 0
+directions2 BYTE "PLAYER 2 ON THE RIGHT USE UP AND DOWN ARROWS, ENTER TO SHOOT", 0
+directions3 BYTE "TRY TO ELIMATE YOUR OPPONENT AND AVOID INCOMING FIRE!", 0
 startStr BYTE "PRESS SPACEBAR TO PLAY", 0
+startStr2 BYTE "TO PAUSE: PRESS P", 0
 pausedStr BYTE "PAUSED: PRESS SPACEBAR TO CONTINUE", 0
 gameOverStr BYTE "GAME OVER", 0
 player1Wins BYTE "<-- PLAYER 1 WINS!!", 0
@@ -109,6 +113,10 @@ START:
 	;; simply continue to draw the start screen ;;
 	invoke DrawStr, OFFSET welcomeStr, 240, 100, 0ffh
 	invoke DrawStr, OFFSET startStr, 230, 300, 0ffh
+	invoke DrawStr, OFFSET startStr2, 250, 320, 0ffh
+	invoke DrawStr, OFFSET directions1, 60, 150, 0ffh
+	invoke DrawStr, OFFSET directions2, 85, 170, 0ffh
+	invoke DrawStr, OFFSET directions3, 110, 210, 0ffh
 
 	;; draw background and fighters ;;
 	invoke DrawStarField
@@ -195,7 +203,7 @@ PAUSE:
 	invoke DrawStarField
 	invoke RotateBlit, p1.bitmap, p1.x, p1.y, p1.angle
 	invoke RotateBlit, p2.bitmap, p2.x, p2.y, p2.angle
-	invoke DrawStr, OFFSET pausedStr, 200, 300, 0ffh
+	invoke DrawStr, OFFSET pausedStr, 180, 300, 0ffh
 	jmp DONE
 
 GAMEOVER:
@@ -204,14 +212,14 @@ GAMEOVER:
 	invoke DrawStarField
 	invoke RotateBlit, p1.bitmap, p1.x, p1.y, p1.angle
 	invoke RotateBlit, p2.bitmap, p2.x, p2.y, p2.angle
-	invoke DrawStr, OFFSET gameOverStr, 200, 300, 0ffh
+	invoke DrawStr, OFFSET gameOverStr, 290, 300, 0ffh
 
 	cmp winner, 1
 	jne player2
-	invoke DrawStr, OFFSET player1Wins, 200, 200, 0ffh
+	invoke DrawStr, OFFSET player1Wins, 260, 200, 0ffh
 	jmp DONE
 player2:
-	invoke DrawStr, OFFSET player2Wins, 200, 200, 0ffh
+	invoke DrawStr, OFFSET player2Wins, 260, 200, 0ffh
 
 	jmp DONE
 
