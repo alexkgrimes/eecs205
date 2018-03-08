@@ -22,8 +22,15 @@ include keys.inc
 ;; For Drawing Text
 include \masm32\include\user32.inc
 includelib \masm32\lib\user32.lib
+
+;; For sound
+include \masm32\include\windows.inc
+include \masm32\include\winmm.inc
+includelib \masm32\lib\winmm.lib
 	
 .DATA
+
+SndPath BYTE "MDK2 TRACK 14.wav",0
 
 ;; constant declarations ;; 
 welcomeStr BYTE "WELCOME TO ASTEROIDS!", 0
@@ -69,8 +76,9 @@ p2Sprites Sprite 500 DUP (<>)
 
 .CODE
 	
-
 GameInit PROC 
+
+	invoke PlaySound, offset SndPath, 0, SND_FILENAME OR SND_ASYNC
 
 	;; draw the background and fighters ;;
 	invoke DrawStarField
@@ -98,7 +106,6 @@ GamePlay PROC USES eax ebx ecx
 	;; update players keyPressed values ;;
 	invoke KeyHandler 	
 	
-
 	;; decide what to do based on your game status ;;		
 	cmp status, 0
 	je  START
@@ -125,15 +132,12 @@ START:
 	jmp DONE
 
 PLAY:
-	;; find out what key was last pressed to update lastPressed for the players ;;
-	;;invoke KeyHandler
-
-	;; draw background and fighters ;;
+	;; update the position of the fighters and moving sprites ;;
 	invoke UpdatePositions
 
-	
+	;; check for collisions  to indicate GAMEOVER ;;
 
-	;; check for collisions ;;
+	;; collision between p1Sprites with player 2 ;;
 	mov edx, OFFSET p1Sprites
 	mov ebx, 0
 	mov ecx, 0
@@ -149,6 +153,7 @@ PLAY:
 		cmp ecx, p1numSprites
 		jl  do
 
+	;; collision between p2Sprites with player 1 ;;
 	mov edx, OFFSET p2Sprites
 	mov ebx, 0
 	mov ecx, 0
@@ -164,7 +169,8 @@ PLAY:
 		cmp ecx, p2numSprites
 		jl  do1
 
-	;; do everything else ;;
+	;; draw the screen ;;
+
 	invoke DrawStarField
 	invoke RotateBlit, p1.bitmap, p1.x, p1.y, p1.angle
 	invoke RotateBlit, p2.bitmap, p2.x, p2.y, p2.angle
@@ -194,7 +200,6 @@ PLAY:
 	cond2:
 		cmp ecx, p2numSprites
 		jl  draw2
-
 
 	jmp DONE
 	
@@ -234,7 +239,8 @@ GamePlay ENDP
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 UpdatePositions PROC USES eax ebx ecx edx
-	;; player1 ;;
+
+	;; move player1 based on lastPressed key ;;
 	cmp p1.lastPressed, VK_UP
 	je p1MoveUp
 	cmp p1.lastPressed, VK_DOWN
@@ -242,13 +248,17 @@ UpdatePositions PROC USES eax ebx ecx edx
 	jmp player2
 
 p1MoveUp:
-	sub p1.y, 5
+	cmp p1.y, 10
+	jle player2
+	sub p1.y, 8
 	jmp player2
 p1MoveDown:
-	add p1.y, 5
+	cmp p1.y, 440
+	jge player2
+	add p1.y, 8
 	jmp player2
 
-	;; player 2 ;;
+	;; move player 2 based on lastPressed key ;;
 player2:
 	cmp p2.lastPressed, VK_S
 	je p2MoveDown
@@ -256,10 +266,14 @@ player2:
 	je p2MoveUp
 	jmp done
 p2MoveUp:
-	sub p2.y, 5
+	cmp p2.y, 10
+	jle done
+	sub p2.y, 8
 	jmp done
 p2MoveDown:
-	add p2.y, 5
+	cmp p2.y, 440
+	jge done
+	add p2.y, 8
 	jmp done
 
 done:
@@ -344,6 +358,7 @@ KeyHandler PROC USES eax ebx ecx edx
 
     jmp done
 
+    ;; movement keys ;;
 spaceBar:
 	mov status, 1			;; play mode
     jmp done
@@ -351,13 +366,14 @@ pKey:
 	mov status, 2			;; paused game
 	jmp done
 
-upArrow:					;; update p1 lastPressed
+	;; movement updates for players 1 and 2 ;;
+upArrow:					
 	mov p1.lastPressed, VK_UP
 	jmp done
 downArrow:							
 	mov p1.lastPressed, VK_DOWN
 	jmp done
-wKey:						;; update p2 lastPressed
+wKey:						
 	mov p2.lastPressed, VK_W
 	jmp done
 sKey:
@@ -365,6 +381,7 @@ sKey:
 	jmp done
 
 return:
+	;; shoot a spite from player1 ;;
 	mov eax, OFFSET p1Sprites
 	mov ecx, p1numSprites
 	imul ecx, TYPE Sprite
@@ -378,6 +395,7 @@ return:
 	jmp done
 
 xKey:
+	;; shoot a sprite from player2 ;;
 	mov eax, OFFSET p2Sprites
 	mov ecx, p2numSprites
 	imul ecx, TYPE Sprite
