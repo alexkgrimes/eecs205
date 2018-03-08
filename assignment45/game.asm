@@ -30,28 +30,36 @@ includelib \masm32\lib\winmm.lib
 	
 .DATA
 
-SndPath BYTE "MDK2 TRACK 14.wav",0
+SndPath BYTE "MDK2 TRACK 16.wav",0
 
 ;; constant declarations ;; 
-welcomeStr BYTE "WELCOME TO ASTEROIDS!", 0
-directions1 BYTE "PLAYER 1 ON THE LEFT USE W AND S TO MOVE UP AND DOWN, X TO SHOOT", 0
-directions2 BYTE "PLAYER 2 ON THE RIGHT USE UP AND DOWN ARROWS, ENTER TO SHOOT", 0
-directions3 BYTE "TRY TO ELIMATE YOUR OPPONENT AND AVOID INCOMING FIRE!", 0
-startStr BYTE "PRESS SPACEBAR TO PLAY", 0
-startStr2 BYTE "TO PAUSE: PRESS P", 0
-pausedStr BYTE "PAUSED: PRESS SPACEBAR TO CONTINUE", 0
-gameOverStr BYTE "GAME OVER", 0
-player1Wins BYTE "<-- PLAYER 1 WINS!!", 0
-player2Wins BYTE "PLAYER 2 WINS!! -->", 0
+welcomeStr 	 BYTE "WELCOME TO ASTEROIDS!", 0
+directions1  BYTE "PLAYER 1 ON THE LEFT USE W AND S TO MOVE UP AND DOWN, X TO SHOOT", 0
+directions2  BYTE "PLAYER 2 ON THE RIGHT USE UP AND DOWN ARROWS, ENTER TO SHOOT", 0
+directions3  BYTE "TRY TO ELIMATE YOUR OPPONENT AND AVOID INCOMING FIRE!", 0
+startStr 	 BYTE "PRESS SPACEBAR TO PLAY", 0
+startStr2 	 BYTE "TO PAUSE: PRESS P", 0
+pausedStr 	 BYTE "PAUSED: PRESS SPACEBAR TO CONTINUE", 0
+gameOverStr  BYTE "GAME OVER", 0
+player1Wins  BYTE "<-- PLAYER 1 WINS!!", 0
+player2Wins  BYTE "PLAYER 2 WINS!! -->", 0
+outOfAmmoStr BYTE "YOU'RE OUT OF AMMO!", 0
 
-status DWORD 0				;; 0:start, 1:play, 2:paused, 3:gameover
+player1Score BYTE "SCORE: ", 0
+player2Score BYTE "SCORE: ", 0
+
+status 		 DWORD 0				;; 0:start, 1:play, 2:paused, 3:gameover
+outOfAmmo 	 DWORD 0			;; 0 if normal end to game, 1 if because out of ammo
+
 p1numSprites DWORD 0		
 p2numSprites DWORD 0
-winner DWORD 0
+winner 		 DWORD 0
+p1Score 	 DWORD 0 
+p2Score 	 DWORD 0
 
-PI_HALF = 102943           	;;  PI / 2
-PI =  205887	            ;;  PI 
-TWO_PI	= 411774            ;;  2 * PI 
+PI_HALF = 	102943           	;;  PI / 2
+PI =  		205887	            ;;  PI 
+TWO_PI	= 	411774            ;;  2 * PI 
 
 ;; struct declarations ;;
 Sprite STRUCT
@@ -71,8 +79,8 @@ Player ENDS
 ;; object declarations ;;
 p1 Player <?, 590, 240, -PI_HALF, OFFSET fighter_001>
 p2 Player <?, 50, 240, PI_HALF, OFFSET fighter_001>
-p1Sprites Sprite 500 DUP (<>)
-p2Sprites Sprite 500 DUP (<>)
+p1Sprites Sprite 100 DUP (<>)
+p2Sprites Sprite 100 DUP (<>)
 
 .CODE
 	
@@ -99,6 +107,7 @@ GameInit ENDP
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 GamePlay PROC USES eax ebx ecx
+	
 	;; clear the screen to make things easier ;;
 	invoke ClearScreen
 
@@ -116,6 +125,14 @@ GamePlay PROC USES eax ebx ecx
 	cmp status, 3
 	je GAMEOVER
 
+	
+
+	;; TODO: scoring
+	;;
+
+	
+	
+
 START:
 	;; simply continue to draw the start screen ;;
 	invoke DrawStr, OFFSET welcomeStr, 240, 100, 0ffh
@@ -132,6 +149,21 @@ START:
 	jmp DONE
 
 PLAY:
+	
+	;; check for out of ammo ;;
+	mov outOfAmmo, 1
+	mov winner, 1
+	cmp p1numSprites, 100
+	jge GAMEOVER
+
+	mov outOfAmmo, 1
+	mov winner, 2
+	cmp p2numSprites, 100
+	jge GAMEOVER
+
+	mov winner, 0
+	mov outOfAmmo, 0
+
 	;; update the position of the fighters and moving sprites ;;
 	invoke UpdatePositions
 
@@ -222,9 +254,14 @@ GAMEOVER:
 	cmp winner, 1
 	jne player2
 	invoke DrawStr, OFFSET player1Wins, 260, 200, 0ffh
-	jmp DONE
+	jmp ammo
 player2:
 	invoke DrawStr, OFFSET player2Wins, 260, 200, 0ffh
+
+ammo:
+	cmp outOfAmmo, 1
+	jne DONE
+	invoke DrawStr, OFFSET outOfAmmoStr, 260, 180, 0ffh
 
 	jmp DONE
 
