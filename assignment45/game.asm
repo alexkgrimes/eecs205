@@ -29,11 +29,14 @@ includelib \masm32\lib\user32.lib
 welcomeStr BYTE "WELCOME TO ASTEROIDS!", 0
 startStr BYTE "PRESS SPACEBAR TO PLAY", 0
 pausedStr BYTE "PAUSED: PRESS SPACEBAR TO CONTINUE", 0
-gameOverStr Byte "GAME OVER", 0
+gameOverStr BYTE "GAME OVER", 0
+player1Wins BYTE "<-- PLAYER 1 WINS!!", 0
+player2Wins BYTE "PLAYER 2 WINS!! -->", 0
 
 status DWORD 0				;; 0:start, 1:play, 2:paused, 3:gameover
 p1numSprites DWORD 0		
 p2numSprites DWORD 0
+winner DWORD 0
 
 PI_HALF = 102943           	;;  PI / 2
 PI =  205887	            ;;  PI 
@@ -129,6 +132,7 @@ PLAY:
 		jmp condIntersect
 	do:
 		invoke CheckIntersect, (Sprite PTR [edx + ebx]).x, (Sprite PTR [edx + ebx]).y, (Sprite PTR [edx + ebx]).bitmap, p2.x, p2.y, p2.bitmap
+		mov winner, 2
 		cmp eax, 1
 		je GAMEOVER
 		inc ecx
@@ -143,6 +147,7 @@ PLAY:
 		jmp condIntersect1
 	do1:
 		invoke CheckIntersect, (Sprite PTR [edx + ebx]).x, (Sprite PTR [edx + ebx]).y, (Sprite PTR [edx + ebx]).bitmap, p1.x, p1.y, p1.bitmap
+		mov winner, 1
 		cmp eax, 1
 		je GAMEOVER
 		inc ecx
@@ -200,6 +205,14 @@ GAMEOVER:
 	invoke RotateBlit, p1.bitmap, p1.x, p1.y, p1.angle
 	invoke RotateBlit, p2.bitmap, p2.x, p2.y, p2.angle
 	invoke DrawStr, OFFSET gameOverStr, 200, 300, 0ffh
+
+	cmp winner, 1
+	jne player2
+	invoke DrawStr, OFFSET player1Wins, 200, 200, 0ffh
+	jmp DONE
+player2:
+	invoke DrawStr, OFFSET player2Wins, 200, 200, 0ffh
+
 	jmp DONE
 
 DONE:
