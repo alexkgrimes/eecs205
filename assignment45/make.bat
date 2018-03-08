@@ -57,15 +57,13 @@ if %errorlevel% neq 0 goto :error
 
 ml  /c  /coff  /Cp fighter_001.asm || goto :error
 
-ml  /c  /coff  /Cp asteroid_001.asm || goto :error
-
 ml  /c  /coff  /Cp nuke_004.asm || goto :error
 
 ml  /c  /coff  /Cp nuke_002.asm || goto :error
 
 ml  /c  /coff  /Cp nuke_000.asm || goto :error
 
-link /SUBSYSTEM:WINDOWS  /LIBPATH:%MASMLIBPATH% game.obj blit.obj trig.obj lines.obj stars.obj fighter_001.obj asteroid_001.obj nuke_004.obj nuke_002.obj nuke_000.obj libgame.obj
+link /SUBSYSTEM:WINDOWS  /LIBPATH:%MASMLIBPATH% game.obj blit.obj trig.obj lines.obj stars.obj fighter_001.obj nuke_004.obj nuke_002.obj nuke_000.obj libgame.obj
 
 if %errorlevel% neq 0 goto :error
 
