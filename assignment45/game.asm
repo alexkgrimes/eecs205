@@ -30,7 +30,8 @@ includelib \masm32\lib\winmm.lib
 	
 .DATA
 
-SndPath BYTE "MDK2 TRACK 16.wav",0
+;; music ;;
+SndPath 	 BYTE "MDK2 TRACK 16.wav",0
 
 ;; constant declarations ;; 
 welcomeStr 	 BYTE "WELCOME TO ASTEROIDS!", 0
@@ -45,21 +46,22 @@ player1Wins  BYTE "<-- PLAYER 1 WINS!!", 0
 player2Wins  BYTE "PLAYER 2 WINS!! -->", 0
 outOfAmmoStr BYTE "YOU'RE OUT OF AMMO!", 0
 
-player1Score BYTE "SCORE: ", 0
-player2Score BYTE "SCORE: ", 0
+p1ScoreStr BYTE "LIVES: ", 0
+p2ScoreStr BYTE "LIVES: ", 0
 
 status 		 DWORD 0				;; 0:start, 1:play, 2:paused, 3:gameover
-outOfAmmo 	 DWORD 0			;; 0 if normal end to game, 1 if because out of ammo
+outOfAmmo 	 DWORD 0				;; 0 if normal end to game, 1 if because out of ammo
 
 p1numSprites DWORD 0		
 p2numSprites DWORD 0
 winner 		 DWORD 0
-p1Score 	 DWORD 0 
-p2Score 	 DWORD 0
+
+p1Lives BYTE 036h, 0
+p2Lives BYTE 036h, 0
 
 PI_HALF = 	102943           	;;  PI / 2
 PI =  		205887	            ;;  PI 
-TWO_PI	= 	411774            ;;  2 * PI 
+TWO_PI	= 	411774            	;;  2 * PI 
 
 ;; struct declarations ;;
 Sprite STRUCT
@@ -79,8 +81,8 @@ Player ENDS
 ;; object declarations ;;
 p1 Player <?, 590, 240, -PI_HALF, OFFSET fighter_001>
 p2 Player <?, 50, 240, PI_HALF, OFFSET fighter_001>
-p1Sprites Sprite 100 DUP (<>)
-p2Sprites Sprite 100 DUP (<>)
+p1Sprites Sprite 300 DUP (<>)
+p2Sprites Sprite 300 DUP (<>)
 
 .CODE
 	
@@ -125,14 +127,6 @@ GamePlay PROC USES eax ebx ecx
 	cmp status, 3
 	je GAMEOVER
 
-	
-
-	;; TODO: scoring
-	;;
-
-	
-	
-
 START:
 	;; simply continue to draw the start screen ;;
 	invoke DrawStr, OFFSET welcomeStr, 240, 100, 0ffh
@@ -153,12 +147,12 @@ PLAY:
 	;; check for out of ammo ;;
 	mov outOfAmmo, 1
 	mov winner, 1
-	cmp p1numSprites, 100
+	cmp p1numSprites, 300
 	jge GAMEOVER
 
 	mov outOfAmmo, 1
 	mov winner, 2
-	cmp p2numSprites, 100
+	cmp p2numSprites, 300
 	jge GAMEOVER
 
 	mov winner, 0
@@ -178,7 +172,11 @@ PLAY:
 		invoke CheckIntersect, (Sprite PTR [edx + ebx]).x, (Sprite PTR [edx + ebx]).y, (Sprite PTR [edx + ebx]).bitmap, p2.x, p2.y, p2.bitmap
 		mov winner, 2
 		cmp eax, 1
+		jne noCollision
+		dec p1Lives
+		cmp p1Lives, 030h
 		je GAMEOVER
+	noCollision:
 		inc ecx
 		add ebx, TYPE Sprite
 	condIntersect:
@@ -194,18 +192,26 @@ PLAY:
 		invoke CheckIntersect, (Sprite PTR [edx + ebx]).x, (Sprite PTR [edx + ebx]).y, (Sprite PTR [edx + ebx]).bitmap, p1.x, p1.y, p1.bitmap
 		mov winner, 1
 		cmp eax, 1
+		jne noCollision1
+		dec p2Lives
+		cmp p2Lives, 030h
 		je GAMEOVER
+	noCollision1:
 		inc ecx
 		add ebx, TYPE Sprite
 	condIntersect1:
 		cmp ecx, p2numSprites
 		jl  do1
 
-	;; draw the screen ;;
+	;; draw the screen, fighers, and scores ;;
 
 	invoke DrawStarField
 	invoke RotateBlit, p1.bitmap, p1.x, p1.y, p1.angle
 	invoke RotateBlit, p2.bitmap, p2.x, p2.y, p2.angle
+	invoke DrawStr, OFFSET p1ScoreStr, 10, 430, 0ffh
+	invoke DrawStr, OFFSET p1Lives, 70, 430, 0ffh
+	invoke DrawStr, OFFSET p2ScoreStr, 530, 430, 0ffh
+	invoke DrawStr, OFFSET p2Lives, 590, 430, 0ffh
 
 	;; draw player 1 sprites in flight ;;
 	mov ecx, 0
@@ -241,6 +247,10 @@ PAUSE:
 	invoke RotateBlit, p1.bitmap, p1.x, p1.y, p1.angle
 	invoke RotateBlit, p2.bitmap, p2.x, p2.y, p2.angle
 	invoke DrawStr, OFFSET pausedStr, 180, 300, 0ffh
+	invoke DrawStr, OFFSET p1ScoreStr, 10, 430, 0ffh
+	invoke DrawStr, OFFSET p1Lives, 70, 430, 0ffh
+	invoke DrawStr, OFFSET p2ScoreStr, 530, 430, 0ffh
+	invoke DrawStr, OFFSET p2Lives, 590, 430, 0ffh
 	jmp DONE
 
 GAMEOVER:
@@ -251,6 +261,7 @@ GAMEOVER:
 	invoke RotateBlit, p2.bitmap, p2.x, p2.y, p2.angle
 	invoke DrawStr, OFFSET gameOverStr, 290, 300, 0ffh
 
+	;; display the winner, and whether you ran out of ammo ;;
 	cmp winner, 1
 	jne player2
 	invoke DrawStr, OFFSET player1Wins, 260, 200, 0ffh
