@@ -38,6 +38,7 @@ welcomeStr 	 BYTE "WELCOME TO ASTEROIDS!", 0
 directions1  BYTE "PLAYER 1 ON THE LEFT USE W AND S TO MOVE UP AND DOWN, X TO SHOOT", 0
 directions2  BYTE "PLAYER 2 ON THE RIGHT USE UP AND DOWN ARROWS, ENTER TO SHOOT", 0
 directions3  BYTE "TRY TO ELIMATE YOUR OPPONENT AND AVOID INCOMING FIRE!", 0
+directions4  BYTE "MAKE SURE TO NOT RUN OUT OF AMMO!",0
 startStr 	 BYTE "PRESS SPACEBAR TO PLAY", 0
 startStr2 	 BYTE "TO PAUSE: PRESS P", 0
 pausedStr 	 BYTE "PAUSED: PRESS SPACEBAR TO CONTINUE", 0
@@ -52,16 +53,16 @@ p2ScoreStr BYTE "LIVES: ", 0
 status 		 DWORD 0				;; 0:start, 1:play, 2:paused, 3:gameover
 outOfAmmo 	 DWORD 0				;; 0 if normal end to game, 1 if because out of ammo
 
-p1numSprites DWORD 0		
+p1numSprites DWORD 0				;; initialize winner var, numSprites 
 p2numSprites DWORD 0
 winner 		 DWORD 0
 
-p1Lives BYTE 036h, 0
-p2Lives BYTE 036h, 0
+p1Lives BYTE 033h, 0				;; each player gets 3 lives
+p2Lives BYTE 033h, 0
 
-PI_HALF = 	102943           	;;  PI / 2
-PI =  		205887	            ;;  PI 
-TWO_PI	= 	411774            	;;  2 * PI 
+PI_HALF = 	102943           		;;  PI / 2
+PI =  		205887	            	;;  PI 
+TWO_PI	= 	411774            		;;  2 * PI 
 
 ;; struct declarations ;;
 Sprite STRUCT
@@ -135,6 +136,7 @@ START:
 	invoke DrawStr, OFFSET directions1, 60, 150, 0ffh
 	invoke DrawStr, OFFSET directions2, 85, 170, 0ffh
 	invoke DrawStr, OFFSET directions3, 110, 210, 0ffh
+	invoke DrawStr, OFFSET directions4, 110, 230, 0ffh
 
 	;; draw background and fighters ;;
 	invoke DrawStarField
@@ -144,7 +146,7 @@ START:
 
 PLAY:
 	
-	;; check for out of ammo ;;
+	;; check for out of ammo, determine winner, and perhaps goto GAMEOVER ;;
 	mov outOfAmmo, 1
 	mov winner, 1
 	cmp p1numSprites, 300
@@ -164,6 +166,7 @@ PLAY:
 	;; check for collisions  to indicate GAMEOVER ;;
 
 	;; collision between p1Sprites with player 2 ;;
+	;; if there is a collision and you are out of lives, goto GAMEOVER ;;
 	mov edx, OFFSET p1Sprites
 	mov ebx, 0
 	mov ecx, 0
@@ -296,11 +299,13 @@ UpdatePositions PROC USES eax ebx ecx edx
 	jmp player2
 
 p1MoveUp:
+	;; move up only if in bounds
 	cmp p1.y, 10
 	jle player2
 	sub p1.y, 8
 	jmp player2
 p1MoveDown:
+	;; move up only if in bounds
 	cmp p1.y, 440
 	jge player2
 	add p1.y, 8
@@ -314,11 +319,13 @@ player2:
 	je p2MoveUp
 	jmp done
 p2MoveUp:
+	;; move up but only if you will stay in bounds
 	cmp p2.y, 10
 	jle done
 	sub p2.y, 8
 	jmp done
 p2MoveDown:
+	;; move down but ony if you will stay in bounds
 	cmp p2.y, 440
 	jge done
 	add p2.y, 8
