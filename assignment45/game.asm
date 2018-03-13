@@ -390,9 +390,9 @@ KeyHandler PROC USES eax ebx ecx edx
     mov eax, KeyPress
 
     ;; status keys ;;
-    cmp eax, VK_SPACE 				;; a spacebar
+    cmp eax, VK_SPACE 			
     je spaceBar
-    cmp eax, VK_P				;; the P key
+    cmp eax, VK_P			
     je pKey
  
  	;; movement keys ;;
