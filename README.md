@@ -12,26 +12,26 @@ The game requires a Windows machine, or can also be run on a virutal machine on 
 ### Game
 
 <p align="center">
-  <img src="game-menu.PNG" width="45%">
-  <img src="game.PNG" width="45%">
+  <img src="images/game-menu.PNG" width="45%">
+  <img src="images/game.PNG" width="45%">
 </p>
 
 ### Stars
 
 <p align="center">
-  <img src="stars.PNG" width="45%">
+  <img src="images/stars.PNG" width="45%">
 </p>
 
 ### Lines
 
 <p align="center">
-  <img src="lines.PNG" width="45%">
+  <img src="images/lines.PNG" width="45%">
 </p>
 
 ### Blit
 
 <p align="center">
-  <img src="blit.PNG" width="45%">
+  <img src="images/blit.PNG" width="45%">
 </p>
 
 ## Structure
