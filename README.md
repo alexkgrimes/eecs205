@@ -11,26 +11,34 @@ The game requires a Windows machine, or can also be run on a virutal machine on 
 
 ### Game
 
-<p align="center">
+Running the game will land you on the menu screen, and then after pressing space bar the game begins!
+
+<p align="left">
   <img src="images/game-menu.PNG" width="45%">
   <img src="images/game.PNG" width="45%">
 </p>
 
 ### Stars
 
-<p align="center">
+Sample code for running just the background of the game.
+
+<p align="left">
   <img src="images/stars.PNG" width="45%">
 </p>
 
 ### Lines
 
-<p align="center">
+Sample code for a line generator.
+
+<p align="left">
   <img src="images/lines.PNG" width="45%">
 </p>
 
 ### Blit
 
-<p align="center">
+Sample code to rotate the star using the left and right arrow keys.
+
+<p align="left">
   <img src="images/blit.PNG" width="45%">
 </p>
 
