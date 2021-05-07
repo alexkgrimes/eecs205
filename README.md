@@ -7,6 +7,33 @@ This is a 2 player game where each player controls a spaceship on opposite sides
 
 The game requires a Windows machine, or can also be run on a virutal machine on MacOS. If not already installed, download MASM from `http://www.masm32.com/` and follow the instructions from the installer.
 
+## Demo
+
+### Game
+
+<p align="center">
+  <img src="game-menu.PNG" width="45%">
+  <img src="game.PNG" width="45%">
+</p>
+
+### Stars
+
+<p align="center">
+  <img src="stars.PNG" width="45%">
+</p>
+
+### Lines
+
+<p align="center">
+  <img src="lines.PNG" width="45%">
+</p>
+
+### Blit
+
+<p align="center">
+  <img src="blit.PNG" width="45%">
+</p>
+
 ## Structure
 
 The main game is located in the `game` folder. In addition to the game, the repository also has the `stars`, `lines`, and `blit` folders which can be used to explore how to implement different fundamentals used in the final game. 
@@ -27,15 +54,6 @@ Running the exe:
 ```cmd
 game.exe
 ```
-
-### Game
-
-### Stars
-
-### Lines
-
-### Blit
-
 
 ## License
 
