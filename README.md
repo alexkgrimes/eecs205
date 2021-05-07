@@ -9,37 +9,33 @@ The game requires a Windows machine, or can also be run on a virutal machine on 
 
 ## Structure
 
-The directory has a few different folders, but the main game is in `assignment45`.
+The main game is located in the `game` folder. In addition to the game, the repository also has the `stars`, `lines`, and `blit` folders which can be used to explore how to implement different fundamentals used in the final game. 
 
-## Build
+Each of the folders can be built and run individually with the steps below (shown are the steps to build and run the whole `game`).
 
-Navigate to the directory with the final game:
+Navigating to the target directory:
 ```cmd
-cd assignment45/
+cd game
 ```
 
-Run `make` provided by `make.bat`:
+Building with the provided `make.bat`:
 ```cmd
 make
 ```
 
-## Run
-
-To run the game, run `game.exe`:
+Running the exe:
 ```cmd
 game.exe
 ```
 
+### Game
+
+### Stars
+
+### Lines
+
+### Blit
 
 
 ## License
-
-
-
-
-
-Then put this in your crate root:
-```rust
-extern crate date_time_parser;
-```
 
