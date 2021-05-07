@@ -1,0 +1,45 @@
+# Asteroids
+Small asteroids-inspired game built in MASM32 assembly for x86 architecture
+
+This is a 2 player game where each player controls a spaceship on opposite sides of the screen. Use W-S or Up-Down to move the spaceship, and use X and Enter to shoot, respectively. If you are hit by a bullet, don't worry as each player has 3 lives. But too many hits, and your spaceship goes down and the game is over!
+
+## Prerequisites
+
+The game requires a Windows machine, or can also be run on a virutal machine on MacOS. If not already installed, download MASM from `http://www.masm32.com/` and follow the instructions from the installer.
+
+## Structure
+
+The directory has a few different folders, but the main game is in `assignment45`.
+
+## Build
+
+Navigate to the directory with the final game:
+```cmd
+cd assignment45/
+```
+
+Run `make` provided by `make.bat`:
+```cmd
+make
+```
+
+## Run
+
+To run the game, run `game.exe`:
+```cmd
+game.exe
+```
+
+
+
+## License
+
+
+
+
+
+Then put this in your crate root:
+```rust
+extern crate date_time_parser;
+```
+
